@@ -1,0 +1,174 @@
+<html>
+<head>
+    <title>Lyrics Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css" integrity="sha512-ELV+xyi8IhEApPS/pSj66+Jiw+sOT1Mqkzlh8ExXihe4zfqbWkxPRi8wptXIO9g73FSlhmquFlUOuMSoXz5IRw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        body {color:#fff; background-color: #000;}
+        #lyricsDiv {width:642px;height: 419px; border:1px solid white}
+        .ui-slider .ui-slider-handle {width:3em;left:-.6em;text-decoration:none;text-align:center; background-color: #000;color:#fff;}
+        .ui-slider {background-color: #000;color:#fff;}        
+        #lyricsDiv {font-size: 46px;position: absolute;left: 50%;top: 50%;-webkit-transform: translate(-50%, -50%);transform: translate(-50%, -50%);} 
+        #lyricsDiv span.lyrics {font-size: 46px;position: absolute;left: 50%;top: 50%;-webkit-transform: translate(-50%, -50%);transform: translate(-50%, -50%);} 
+        #lyricsDiv div.footer {position: absolute;left: 0;bottom: 0; font-size:15px; width:inherit;}
+        #lyricsDiv div.footer span {text-align: center;}
+
+        select{-webkit-appearance:none;-moz-appearance:none;appearance:none;background-color:transparent;border:none;padding:0 1em 0 0;margin:0;width:100%;font-family:inherit;font-size:inherit;cursor:inherit;line-height:inherit;z-index:1;outline:none;}select::-ms-expand{display:none;}.select{display:grid;grid-template-areas:"select";align-items:center;position:relative;min-width:15ch;max-width:30ch;border:1px solid var(--select-border);border-radius:0.25em;padding:0.25em 0.5em;font-size:1.25rem;cursor:pointer;line-height:1.0;background-color:rgb(0, 0, 0);background-image:linear-gradient(to top, #000, rgb(0, 0, 0) 33%);}.select select,.select::after{grid-area:select;}select:focus + .focus{position:absolute;top:-1px;left:-1px;right:-1px;bottom:-1px;border:2px solid var(--select-focus);border-radius:inherit;}select{padding-right:0;height:1.3rem;}select option{white-space:normal;outline-color:var(--select-focus);}.select--disabled{cursor:not-allowed;background-color:rgb(0, 0, 0);background-image:linear-gradient(to top, rgb(0, 0, 0) rgb(0, 0, 0) 33%);}label{font-size:1.125rem;font-weight:500;}.select + label{margin-top:2rem;}
+        .select select,.select button {color:#fff;}
+        .select button {background-color: #000;}
+    </style>
+</head>
+
+<body>
+    <center><h3>Select a Song</h3></center>
+    <div id="lyricsDiv"><span class="lyrics"></span><div class="footer"><div id="slider"></div><span><center></center></span></div></div>
+    <p class="content">
+<center>        <label for="amount"></label>
+    <div class="select">
+                <select id="lyricFiles"><option value="null" disabled>Select Lyrics</option></select>
+                <button id="play">Play</button>
+            </div> 
+            <!-- <h5>Contact me for free download of this app</h5> -->
+</center>
+
+</p>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js" integrity="sha512-57oZ/vW8ANMjR/KQ6Be9v/+/h6bq9/l3f0Oc7vn6qMqyhvPd1cvKBRWWpzu0QoneImqr2SkmO4MSqU+RpHom3Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script>
+
+    $.getJSON("getFiles.php", function(lyrics){
+        var lyricsFiles = lyrics.files;
+        var directory = lyrics.directory;
+        console.log(lyricsFiles);
+        $.each(lyricsFiles, function(i,val){
+            $("#lyricFiles").append("<option value='" + val + "'>" + val.replace(directory + "/", "") + "</option>");
+        });
+        $("#lyricFiles").on("change", function(e){
+            console.log( $(this).val());
+            var filename = $(this).val();
+            getLyricsFile(filename);
+            $("div.footer span center").text(filename.replace(".lrc", "").replace(directory + "/", ""));
+
+        });
+    });
+
+    function getLyricsFile(lyricsFile){
+        $(document).trigger("readStart");
+    setTimeout(function(){
+var name = lyricsFile;
+var regex = RegExp(/(\[[0-9]{2}:[0-9]{2}.([0-9]+)\])/mg);
+var metas = [], times = [], lyrics = [];
+$.get(lyricsFile,function(data){
+    if(data===undefined) 
+    {
+        $("#lyricsDiv span.lyrics").html('');
+    }
+    lyric=data;
+    var meta;
+    while((meta = regex.exec(data))!=null)			
+    metas.push(meta);
+    if(metas.length==0)
+    {
+        regex = /(\[\d{2}:\d{2}\])/mg;
+        while((meta = regex.exec(data))!=null)			
+        metas.push(meta);
+    }
+    for (var i = 0; i < metas.length-1; i++) {
+        var line = $.trim(lyric.substring(metas[i].index+10,metas[i+1].index));
+        var time = lyric.substring(metas[i].index+1,metas[i].index+6);	//9
+        if(line=="") continue;
+        lyrics.push({'i':i,'line':line,'time':time});
+        window.lyrics = lyrics;
+        times[time]=line;
+        window.lyricsTime  = times;
+         
+    };			
+}).fail(function(){
+    $("#lyricsDiv span.lyrics").html('');
+});
+
+
+},1000);
+    }
+
+    $(document).on("readStart", function(e){
+    window.startTime = new Date().getTime();
+
+        setTimeout(function () {
+        var endTime = new Date().getTime();
+        }, 1500);
+
+
+    setTimeout(function(){
+    $(document).trigger("playLyrics");
+    
+    },1200);
+    $("button#play").on("click", function(){
+        window.startTime = new Date().getTime();
+        setInterval(function(){
+            window.endTime = new Date().getTime();
+            var sliderTime = window.endTime - window.startTime;
+            
+        $("#slider").slider("value", sliderTime*60).trigger("slidechange");
+        },10);
+    });
+    $(document).on("playLyrics", function(){
+        var timeLength = window.lyrics.length-1;
+    var endTime = window.lyrics[timeLength].time;
+    $("#slider").slider({
+        range: false,
+        min: 0,
+        max: timeToMS(endTime),
+        step: 15,
+        slide: function(e, ui) {
+            var MinutesSeconds = millisToMinutesAndSeconds(ui.value);
+            $('button').text( toHHMMSS(MinutesSeconds[0]*60));
+            $(this).find('.ui-slider-handle').text(toHHMMSS(MinutesSeconds[0]*60));
+        },
+        change: function(e, ui){
+            var MinutesSeconds = millisToMinutesAndSeconds(ui.value);
+            $('button').text(toHHMMSS(MinutesSeconds[0]*60));
+            window.lyricsTime[toHHMMSS(MinutesSeconds[0]*60)] !== undefined ? displayLyrics(window.lyricsTime[toHHMMSS(MinutesSeconds[0]*60)]): false;
+            $(this).find('.ui-slider-handle').text(toHHMMSS(MinutesSeconds[0]*60));
+        }
+    });
+});
+});
+window.lyricsText = "";
+function displayLyrics(lyrics){
+    if(window.lyricsText != lyrics){
+    $("#lyricsDiv span.lyrics").fadeOut(320, function() {
+    $(this).text(lyrics).fadeIn(320);
+        });
+    }
+    window.lyricsText = lyrics;
+}
+function timeToMS(t){
+    return Number(t.split(':')[0]) * 60 * 60 * 1000 + Number(t.split(':')[1]) * 60 * 1000;
+
+}
+function millisToMinutesAndSeconds(millis) {
+  var minutes = Math.floor(millis / 60000);
+  var seconds = ((millis % 60000) / 1000).toFixed(0);
+  var time =  minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+  return time.split(":");
+}
+
+function toHHMMSS(time) {
+    var sec_num = parseInt(time, 10);
+    var hours   = Math.floor(sec_num / 3600);
+    var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+    var seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+    if (hours   < 10) {hours   = "0"+hours;}
+    if (minutes < 10) {minutes = "0"+minutes;}
+    if (seconds < 10) {seconds = "0"+seconds;}
+    return hours+':'+minutes;
+}
+</script>
+
+
+
+</body>
+</html>
